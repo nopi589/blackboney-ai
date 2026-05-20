@@ -4,29 +4,26 @@ from flask import Flask, render_template, request, jsonify, session
 from flask_cors import CORS
 import requests
 
-os.environ['CURL_CA_BUNDLE'] = ''
-os.environ['PYTHONHTTPSVERIFY'] = '0'
-
 app = Flask(__name__)
 CORS(app)
-app.secret_key = "blackboney_ultra_secret_key_multi_chat_2026"
 
-GEMINI_KEY = "AIzaSyCOQrwTTpDw3O66fbybl4NyMUxdWSGf6U0"
+app.config['SECRET_KEY'] = "blackboney_ultra_secret_key_multi_chat_2026"
+app.config['SESSION_COOKIE_NAME'] = 'blackboney_session'
+
+# N-rj3o key dynamic mn dynamic variables aw l-key direct s7ee7a
+GEMINI_KEY = os.environ.get("GEMINI_KEY", "AIzaSyCOQrwTTpDw3O66fbybl4NyMUxdWSGf6U0")
 
 @app.route('/')
 def home():
-    # 'all_chats' dict khwi khass b kulla user f session dyalo
     if 'all_chats' not in session:
         session['all_chats'] = {}
-    # 'active_chat_id' huwa l-ID d l-chat li khdam fiha dba
     if 'active_chat_id' not in session:
-        # n-creew awel chat auto
         new_id = str(uuid.uuid4())[:8]
         session['all_chats'] = {new_id: {"title": "New Chat", "messages": []}}
         session['active_chat_id'] = new_id
+        session.modified = True
     return render_template('index.html')
 
-# API bch njbdo gha l-list d l-chats l-foq d l-sidebar
 @app.route('/api/chats', methods=['GET'])
 def get_all_chats():
     all_chats = session.get('all_chats', {})
@@ -36,7 +33,6 @@ def get_all_chats():
         'active_id': active_id
     })
 
-# API bch n-creew chat jdid bla ma nms7o l-9dam
 @app.route('/api/chats/new', methods=['POST'])
 def create_new_chat():
     all_chats = session.get('all_chats', {})
@@ -47,7 +43,6 @@ def create_new_chat():
     session.modified = True
     return jsonify({'status': 'created', 'id': new_id})
 
-# API bch n-bdlo mn chat l chat mlli user i-cliki f l-sidebar
 @app.route('/api/chats/switch/<chat_id>', methods=['POST'])
 def switch_chat(chat_id):
     all_chats = session.get('all_chats', {})
@@ -72,7 +67,6 @@ def chat():
         all_chats = session.get('all_chats', {})
         active_id = session.get('active_chat_id')
         
-        # Ila madkhlch l awl mra normal
         if not active_id or active_id not in all_chats:
             active_id = str(uuid.uuid4())[:8]
             all_chats[active_id] = {"title": "New Chat", "messages": []}
@@ -80,11 +74,9 @@ def chat():
 
         current_chat = all_chats[active_id]
         
-        # Update dynamic title mlli user i-safet awel msg
         if len(current_chat['messages']) == 0:
             current_chat['title'] = user_message[:22] + ('...' if len(user_message) > 22 else '')
 
-        # Zid message d user f cache d l-chat active
         current_chat['messages'].append({
             "role": "user",
             "parts": [{"text": user_message}]
@@ -99,13 +91,13 @@ def chat():
             }
         }
         
-        response = requests.post(url, json=payload, headers=headers, verify=False)
+        # Beddelna l-post bch Render/Vercel i-safet request secure bla bypass mchmoukh
+        response = requests.post(url, json=payload, headers=headers)
         response_data = response.json()
         
-        try:
+        if 'candidates' in response_data and len(response_data['candidates']) > 0:
             ai_response = response_data['candidates'][0]['content']['parts'][0]['text']
             
-            # Zid message d l-AI hta hwa
             current_chat['messages'].append({
                 "role": "model",
                 "parts": [{"text": ai_response}]
@@ -116,13 +108,10 @@ def chat():
             session.modified = True
             
             return jsonify({'response': ai_response, 'chat_title': current_chat['title']})
-            
-        except KeyError:
-            return jsonify({'response': "Smhli, kayn moshkil f jawb Gemini."}), 500
+        else:
+            # Ila Google 3tat error t-ban lina exact chna hiya
+            error_msg = response_data.get('error', {}).get('message', 'Unknown Gemini API Error')
+            return jsonify({'response': f"Moshkil mn API d Gemini: {error_msg}"}), 500
 
     except Exception as e:
-        return jsonify({'response': "Smhli, kayn moshkil f server."}), 500
-
-print("✨ Ultimate Multi-Chat Storage Running...")
-if __name__ == '__main__':
-    app.run(debug=True)
+        return jsonify({'response': f"Moshkil f Server d Vercel: {str(e)}"}), 500
