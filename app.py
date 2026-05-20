@@ -4,14 +4,19 @@ from flask import Flask, render_template, request, jsonify, session
 from flask_cors import CORS
 import requests
 
+# Zwingi l-SSL bypass mzyan f proxy d Vercel
+os.environ['CURL_CA_BUNDLE'] = ''
+os.environ['PYTHONHTTPSVERIFY'] = '0'
+
 app = Flask(__name__)
 CORS(app)
 
+# Secret keys s7a7 3la 9bl l-cookies d session f Vercel
 app.config['SECRET_KEY'] = "blackboney_ultra_secret_key_multi_chat_2026"
 app.config['SESSION_COOKIE_NAME'] = 'blackboney_session'
 
-# N-rj3o key dynamic mn dynamic variables aw l-key direct s7ee7a
-GEMINI_KEY = os.environ.get("GEMINI_KEY", "AIzaSyAJpdUKnDPr-OKK6N4qnd99RVMSEawhW_8")
+# Hna rj3naha t-9ra direct mn Vercel (khass t-koun 7ttitiha f Settings kima glna)
+GEMINI_KEY = os.environ.get("GEMINI_KEY")
 
 @app.route('/')
 def home():
@@ -55,6 +60,10 @@ def switch_chat(chat_id):
 @app.route('/api/chat', methods=['POST'])
 def chat():
     try:
+        # Check mchmokh ila kant l-key khawya f Vercel environment variables
+        if not GEMINI_KEY:
+            return jsonify({'response': "Moshkil: GEMINI_KEY ma-m7to6ach f Settings dyal Vercel!"}), 500
+
         data = request.get_json()
         user_message = data.get('message', '')
         
@@ -91,8 +100,7 @@ def chat():
             }
         }
         
-        # Beddelna l-post bch Render/Vercel i-safet request secure bla bypass mchmoukh
-        response = requests.post(url, json=payload, headers=headers)
+        response = requests.post(url, json=payload, headers=headers, verify=False)
         response_data = response.json()
         
         if 'candidates' in response_data and len(response_data['candidates']) > 0:
@@ -109,9 +117,11 @@ def chat():
             
             return jsonify({'response': ai_response, 'chat_title': current_chat['title']})
         else:
-            # Ila Google 3tat error t-ban lina exact chna hiya
+            # Hna i-goul lina chno l-moshkil nishan ila rj3at error mn Google API
             error_msg = response_data.get('error', {}).get('message', 'Unknown Gemini API Error')
             return jsonify({'response': f"Moshkil mn API d Gemini: {error_msg}"}), 500
 
     except Exception as e:
         return jsonify({'response': f"Moshkil f Server d Vercel: {str(e)}"}), 500
+
+print("✨ BlackBoney AI Backend Securely Ready...")
