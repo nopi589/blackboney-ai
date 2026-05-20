@@ -11,7 +11,7 @@ app.config['SECRET_KEY'] = "blackboney_ultra_secret_key_multi_chat_2026"
 app.config['SESSION_COOKIE_NAME'] = 'blackboney_session'
 
 # N-rj3o key dynamic mn dynamic variables aw l-key direct s7ee7a
-GEMINI_KEY = os.environ.get("GEMINI_KEY", "AIzaSyCOQrwTTpDw3O66fbybl4NyMUxdWSGf6U0")
+GEMINI_KEY = os.environ.get("GEMINI_KEY", "AIzaSyAJpdUKnDPr-OKK6N4qnd99RVMSEawhW_8")
 
 @app.route('/')
 def home():
